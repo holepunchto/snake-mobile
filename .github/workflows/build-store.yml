@@ -1,0 +1,274 @@
+name: Build Mobile Store Releases
+
+on:
+  workflow_dispatch:
+    inputs:
+      profile:
+        description: EAS build/submit profile
+        required: true
+        default: production
+        type: choice
+        options:
+          - production
+          - preview
+      build_ios:
+        description: Build iOS
+        required: true
+        default: true
+        type: boolean
+      build_android:
+        description: Build Android
+        required: true
+        default: true
+        type: boolean
+      publish:
+        description: Publish after a successful build (production profile only — preview artifacts are not store-submittable)
+        required: true
+        default: true
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mobile-build-store-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build-ios:
+    name: Build iOS (EAS)
+    if: ${{ inputs.build_ios }}
+    runs-on: ubuntu-latest
+    outputs:
+      build_id: ${{ steps.capture.outputs.build_id }}
+      build_number: ${{ steps.capture.outputs.build_number }}
+      app_version: ${{ steps.capture.outputs.app_version }}
+    env:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+      EAS_PROJECT_ID: ${{ secrets.EAS_PROJECT_ID }}
+      EAS_BUILD_NO_EXPO_GO_WARNING: 'true'
+      EAS_PROFILE: ${{ inputs.profile }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Ensure mobile release files
+        run: |
+          if [ ! -f eas.json ]; then
+            echo "eas.json not found — this workflow must run from the mobile branch or a mobile tag."
+            echo "Re-run it and pick 'mobile' (or a release tag) in the Run workflow ref dropdown."
+            exit 1
+          fi
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify EAS auth
+        run: |
+          for key in EXPO_TOKEN EAS_PROJECT_ID; do
+            if [ -z "${!key:-}" ]; then
+              echo "Missing secret: $key"
+              exit 1
+            fi
+          done
+          npx --yes eas-cli whoami
+
+      - name: Link EAS project
+        run: |
+          npx --yes eas-cli project:init --id "$EAS_PROJECT_ID" --force --non-interactive
+
+      - name: Apply iOS app identity override
+        env:
+          IOS_BUNDLE_ID: ${{ vars.IOS_BUNDLE_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          node -e '
+            const fs = require("fs")
+            const config = JSON.parse(fs.readFileSync("app.json", "utf8"))
+            config.expo.ios = Object.assign({}, config.expo.ios)
+            const override = (process.env.IOS_BUNDLE_ID || "").trim()
+            if (override) config.expo.ios.bundleIdentifier = override
+            const team = (process.env.APPLE_TEAM_ID || "").trim()
+            if (team) config.expo.ios.appleTeamId = team
+            else delete config.expo.ios.appleTeamId
+            fs.writeFileSync("app.json", JSON.stringify(config, null, 2) + "\n")
+            const id = config.expo.ios.bundleIdentifier
+            console.log("iOS bundleIdentifier:", id)
+            if (process.env.EAS_PROFILE === "production" && id.startsWith("com.anonymous")) {
+              console.error(
+                "Refusing a production build with the placeholder bundle identifier. " +
+                  "Set the IOS_BUNDLE_ID repository variable or commit a real expo.ios.bundleIdentifier in app.json."
+              )
+              process.exit(1)
+            }
+          '
+
+      - name: Build iOS with EAS
+        run: |
+          set -euo pipefail
+          npx --yes eas-cli build --platform ios --profile "$EAS_PROFILE" --non-interactive --wait --json > ios-build.json
+          cat ios-build.json
+
+      - name: Capture iOS build metadata
+        id: capture
+        run: |
+          set -euo pipefail
+          build_id="$(jq -r 'if type=="array" then .[0].id // empty else .id // empty end' ios-build.json)"
+          build_number="$(jq -r 'if type=="array" then .[0].appBuildVersion // empty else .appBuildVersion // empty end' ios-build.json)"
+          app_version="$(jq -r 'if type=="array" then .[0].appVersion // empty else .appVersion // empty end' ios-build.json)"
+          if [ -z "$build_id" ]; then
+            echo "Failed to extract iOS build id from ios-build.json"
+            exit 1
+          fi
+          echo "build_id=$build_id" >> "$GITHUB_OUTPUT"
+          echo "build_number=$build_number" >> "$GITHUB_OUTPUT"
+          echo "app_version=$app_version" >> "$GITHUB_OUTPUT"
+
+      - name: Upload iOS build metadata artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: mobile-ios-build-metadata
+          path: ios-build.json
+          if-no-files-found: error
+
+  build-android:
+    name: Build Android (EAS)
+    if: ${{ inputs.build_android }}
+    runs-on: ubuntu-latest
+    outputs:
+      build_id: ${{ steps.capture.outputs.build_id }}
+      version_code: ${{ steps.capture.outputs.version_code }}
+      app_version: ${{ steps.capture.outputs.app_version }}
+    env:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+      EAS_PROJECT_ID: ${{ secrets.EAS_PROJECT_ID }}
+      EAS_BUILD_NO_EXPO_GO_WARNING: 'true'
+      EAS_PROFILE: ${{ inputs.profile }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Ensure mobile release files
+        run: |
+          if [ ! -f eas.json ]; then
+            echo "eas.json not found — this workflow must run from the mobile branch or a mobile tag."
+            echo "Re-run it and pick 'mobile' (or a release tag) in the Run workflow ref dropdown."
+            exit 1
+          fi
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify EAS auth
+        run: |
+          for key in EXPO_TOKEN EAS_PROJECT_ID; do
+            if [ -z "${!key:-}" ]; then
+              echo "Missing secret: $key"
+              exit 1
+            fi
+          done
+          npx --yes eas-cli whoami
+
+      - name: Link EAS project
+        run: |
+          npx --yes eas-cli project:init --id "$EAS_PROJECT_ID" --force --non-interactive
+
+      - name: Apply Android app identity override
+        env:
+          ANDROID_PACKAGE: ${{ vars.ANDROID_PACKAGE }}
+        run: |
+          node -e '
+            const fs = require("fs")
+            const config = JSON.parse(fs.readFileSync("app.json", "utf8"))
+            const override = (process.env.ANDROID_PACKAGE || "").trim()
+            if (override) {
+              config.expo.android = Object.assign({}, config.expo.android, { package: override })
+              fs.writeFileSync("app.json", JSON.stringify(config, null, 2) + "\n")
+            }
+            const id = config.expo.android.package
+            console.log("Android package:", id)
+            if (process.env.EAS_PROFILE === "production" && id.startsWith("com.anonymous")) {
+              console.error(
+                "Refusing a production build with the placeholder package name. " +
+                  "Set the ANDROID_PACKAGE repository variable or commit a real expo.android.package in app.json."
+              )
+              process.exit(1)
+            }
+          '
+
+      - name: Build Android with EAS
+        run: |
+          set -euo pipefail
+          npx --yes eas-cli build --platform android --profile "$EAS_PROFILE" --non-interactive --wait --json > android-build.json
+          cat android-build.json
+
+      - name: Capture Android build metadata
+        id: capture
+        run: |
+          set -euo pipefail
+          build_id="$(jq -r 'if type=="array" then .[0].id // empty else .id // empty end' android-build.json)"
+          version_code="$(jq -r 'if type=="array" then .[0].appBuildVersion // empty else .appBuildVersion // empty end' android-build.json)"
+          app_version="$(jq -r 'if type=="array" then .[0].appVersion // empty else .appVersion // empty end' android-build.json)"
+          if [ -z "$build_id" ]; then
+            echo "Failed to extract Android build id from android-build.json"
+            exit 1
+          fi
+          echo "build_id=$build_id" >> "$GITHUB_OUTPUT"
+          echo "version_code=$version_code" >> "$GITHUB_OUTPUT"
+          echo "app_version=$app_version" >> "$GITHUB_OUTPUT"
+
+      - name: Upload Android build metadata artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: mobile-android-build-metadata
+          path: android-build.json
+          if-no-files-found: error
+
+  publish:
+    name: Publish
+    needs: [build-ios, build-android]
+    if: >-
+      ${{ !cancelled() && inputs.publish && inputs.profile == 'production' &&
+          needs.build-ios.result != 'failure' && needs.build-android.result != 'failure' &&
+          (needs.build-ios.result == 'success' || needs.build-android.result == 'success') }}
+    uses: ./.github/workflows/publish-store.yml
+    secrets: inherit
+    with:
+      profile: ${{ inputs.profile }}
+      submit_ios: ${{ needs.build-ios.result == 'success' }}
+      submit_android: ${{ needs.build-android.result == 'success' }}
+      ios_build_id: ${{ needs.build-ios.outputs.build_id }}
+      android_build_id: ${{ needs.build-android.outputs.build_id }}
+
+  build-summary:
+    name: Build Summary
+    if: ${{ always() }}
+    needs: [build-ios, build-android]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Build IDs
+        run: |
+          {
+            echo "## Store build results"
+            echo ""
+            if [ "${{ needs.build-ios.result }}" = "success" ]; then
+              echo "- iOS build id: \`${{ needs.build-ios.outputs.build_id }}\` — version ${{ needs.build-ios.outputs.app_version }} (${{ needs.build-ios.outputs.build_number }})"
+            else
+              echo "- iOS build: ${{ needs.build-ios.result }}"
+            fi
+            if [ "${{ needs.build-android.result }}" = "success" ]; then
+              echo "- Android build id: \`${{ needs.build-android.outputs.build_id }}\` — version ${{ needs.build-android.outputs.app_version }} (code ${{ needs.build-android.outputs.version_code }})"
+            else
+              echo "- Android build: ${{ needs.build-android.result }}"
+            fi
+            echo ""
+            echo "Publish requested: ${{ inputs.publish }}"
+          } | tee -a "$GITHUB_STEP_SUMMARY"

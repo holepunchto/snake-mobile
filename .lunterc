@@ -1,0 +1,5 @@
+{
+  "env": ["node", "browser"],
+  "globals": ["Bare"],
+  "ignore": ["out", "dist", "src/worker.bundle.js"]
+}
