@@ -1,4 +1,4 @@
-const PearRuntime = require('pear-mobile') // pear-runtime on desktop; pear-mobile on mobile (see package.json "imports")
+const PearRuntime = require('pear-mobile')
 const Hyperswarm = require('hyperswarm')
 const Corestore = require('corestore')
 const goodbye = require('graceful-goodbye')

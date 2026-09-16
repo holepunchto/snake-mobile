@@ -5,14 +5,6 @@
   "description": "P2P multiplayer snake game for mobile, built on Pear for Mobile",
   "upgrade": "pear://xs7yj5c5qhkjcstozndcb3omciz6b5qynmm35hdkbfetubngzwgo",
   "main": "index.ts",
-  "imports": {
-    "pear-runtime": {
-      "ios": "pear-mobile",
-      "android": "pear-mobile",
-      "simulator": "pear-mobile",
-      "default": "pear-runtime"
-    }
-  },
   "scripts": {
     "bundle:bare": "npx bare-pack --host ios-arm64 --host ios-arm64-simulator --host ios-x64-simulator --host android-arm64 --linked --out ./src/worker.bundle.js ./workers/main.js",
     "bundle:react-native": "npx react-native bundle --platform ios --dev false --entry-file index.ts --bundle-output out/ios/Snake/app.bundle --assets-dest out/ios/Snake && npx react-native bundle --platform android --dev false --entry-file index.ts --bundle-output out/android/Snake/app.bundle --assets-dest out/android/Snake",
