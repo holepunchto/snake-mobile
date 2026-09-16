@@ -12,7 +12,6 @@ dist/
 
 # Expo
 .expo/
-web-build/
 expo-env.d.ts
 
 # Native

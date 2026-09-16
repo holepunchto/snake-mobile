@@ -4,9 +4,6 @@ const pkg = require('./package.json')
 module.exports = ({ config }) => {
   const baseExpoConfig = appJson?.expo || {}
   const incoming = config || {}
-  const packageVersion = String(pkg?.version || '').trim()
-  const resolvedVersion =
-    packageVersion || String(incoming.version || baseExpoConfig.version || '1.0.0').trim()
   const buildNumber = (process.env.BUILD_NUMBER || '').trim()
 
   if (buildNumber && (!/^[1-9]\d*$/.test(buildNumber) || Number(buildNumber) > 2100000000)) {
@@ -16,7 +13,7 @@ module.exports = ({ config }) => {
   return {
     ...baseExpoConfig,
     ...incoming,
-    version: resolvedVersion,
+    version: pkg.version,
     ios: {
       ...baseExpoConfig.ios,
       ...incoming.ios,
