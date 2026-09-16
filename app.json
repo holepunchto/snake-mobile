@@ -2,7 +2,6 @@
   "expo": {
     "name": "Pear Snake",
     "slug": "snake",
-    "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
@@ -28,8 +27,7 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.anonymous.snake",
-      "appleTeamId": "99564YDV39"
+      "bundleIdentifier": "com.pears.snake"
     },
     "android": {
       "adaptiveIcon": {
@@ -37,17 +35,10 @@
         "backgroundColor": "#001601"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.anonymous.snake"
-    },
-    "web": {
-      "favicon": "./assets/favicon.png"
+      "package": "com.pears.snake"
     },
     "extra": {
-      "eas": {
-        "projectId": "add0ac0a-2ac7-4fc4-9937-d2b5a01515c4"
-      },
       "iosAppStoreId": ""
-    },
-    "owner": "geordangesink"
+    }
   }
 }

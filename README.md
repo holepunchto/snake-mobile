@@ -67,9 +67,13 @@ npm run ios
 npm run android
 ```
 
-Use `npm start` to (re)start just the Metro bundler without rebuilding. The iOS app is pinned to Metro **port 8099** (via the `./plugins/with-metro-port` config plugin) so it never collides with another React Native project on the default 8081 — `npm run ios` and `npm start` both serve on 8099 to match, so start Metro with those rather than a bare `expo start`. A dev build loads its JS from Metro; a release build (`npm run production:ios`) embeds the bundle and ignores Metro.
+Use `npm start` to (re)start just the Metro bundler without rebuilding. `npm run ios` and `npm start` use Metro **port 8099**. A dev build loads its JS from Metro; a release build (`npm run production:ios`) embeds the bundle and ignores Metro.
 
 In development (`npm run ios` / `npm run android`) the app passes `__DEV__` to the worker so OTA updates are disabled, mirroring the desktop `--no-updates` default.
+
+## Releases
+
+iOS and Android builds, signing, artifacts, store publishing, and Pear update builds run in [geordangesink/pear-snake-ci-build](https://github.com/geordangesink/pear-snake-ci-build). See [Releasing](https://github.com/geordangesink/pear-snake-ci-build/blob/main/RELEASING.md) for the workflows and central secrets setup.
 
 ## OTA updates & deploy
 

@@ -5,23 +5,14 @@
   "description": "P2P multiplayer snake game for mobile, built on Pear for Mobile",
   "upgrade": "pear://<SET_UPGRADE_LINK>",
   "main": "index.ts",
-  "imports": {
-    "pear-runtime": {
-      "ios": "pear-mobile",
-      "android": "pear-mobile",
-      "simulator": "pear-mobile",
-      "default": "pear-runtime"
-    }
-  },
   "scripts": {
     "bundle:bare": "npx bare-pack --host ios-arm64 --host ios-arm64-simulator --host ios-x64-simulator --host android-arm64 --linked --out ./src/worker.bundle.js ./workers/main.js",
     "bundle:react-native": "npx react-native bundle --platform ios --dev false --entry-file index.ts --bundle-output out/ios/Snake/app.bundle --assets-dest out/ios/Snake && npx react-native bundle --platform android --dev false --entry-file index.ts --bundle-output out/android/Snake/app.bundle --assets-dest out/android/Snake",
     "build": "npx pear-build --ios-arm64 ./out/ios/Snake --ios-arm64-simulator ./out/ios/Snake --ios-x64-simulator ./out/ios/Snake --android-arm64 ./out/android/Snake --package ./package.json --config ./pear.json --target dist",
     "update": "npm run bundle:bare && npm run bundle:react-native && npm run build",
-    "eas-build-post-install": "npm run bundle:bare",
     "prebuild": "npx expo prebuild",
-    "start": "expo start --port 8099",
-    "ios": "expo run:ios --port 8099",
+    "start": "expo start",
+    "ios": "expo run:ios",
     "android": "expo run:android",
     "production:ios": "npx expo run:ios --configuration Release",
     "production:android": "npx expo run:android --variant release",
