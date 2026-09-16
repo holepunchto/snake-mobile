@@ -73,7 +73,7 @@ In development (`npm run ios` / `npm run android`) the app passes `__DEV__` to t
 
 ## Releases
 
-iOS and Android builds, signing, artifacts, store publishing, and Pear update builds run in [geordangesink/pear-snake-ci-build](https://github.com/geordangesink/pear-snake-ci-build). See [Releasing](RELEASING.md) for the workflows and central secrets setup.
+iOS and Android builds, signing, artifacts, store publishing, and Pear update builds run in [geordangesink/pear-snake-ci-build](https://github.com/geordangesink/pear-snake-ci-build). See [Releasing](https://github.com/geordangesink/pear-snake-ci-build/blob/main/RELEASING.md) for the workflows and central secrets setup.
 
 ## OTA updates & deploy
 
