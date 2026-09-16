@@ -71,6 +71,10 @@ Use `npm start` to (re)start just the Metro bundler without rebuilding. The iOS 
 
 In development (`npm run ios` / `npm run android`) the app passes `__DEV__` to the worker so OTA updates are disabled, mirroring the desktop `--no-updates` default.
 
+## Releases
+
+iOS and Android builds, signing, artifacts, store publishing, and Pear update builds run in [geordangesink/pear-snake-ci-build](https://github.com/geordangesink/pear-snake-ci-build). See [Releasing](RELEASING.md) for the workflows and central secrets setup.
+
 ## OTA updates & deploy
 
 OTA behaves exactly as in [hello-pear-react-native](../hello-pear-react-native) — the worker replicates the seeded application drive behind the `upgrade` link, emits `updating` / `updated`, and applies the new bundle on request. Full flow:
