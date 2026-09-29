@@ -2,6 +2,8 @@
 
 Store releases build on [EAS](https://expo.dev/eas) and go to TestFlight / Google Play internal testing via GitHub Actions.
 
+The current `snake-core` dependency points to `../snake-core`. Release builds need that sibling checkout and its dependencies installed with `npm install --prefix ../snake-core`. Before using the standalone CI/EAS workflows, publish `snake-core` and replace the local dependency with its published version, or include the sibling package in the build environment.
+
 ## Flow
 
 - **Release (manual only):** Actions → **Build Mobile Store Releases** → Run workflow → pick the ref (the `mobile` branch or a `mobile-v*` tag) and the profile/platforms. It builds on EAS and, when **publish** is left on, submits those exact builds to TestFlight / Play internal testing after the build finishes. Untick **publish** for a build-only run. Preview builds are never submitted (internal-distribution artifacts aren't store-accepted).

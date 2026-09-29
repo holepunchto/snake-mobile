@@ -6,16 +6,16 @@ Same game, same wire protocol, same board as the desktop build — a mobile peer
 
 ## Architecture
 
-The app runs as a standard Expo / React Native application. Peer-to-peer networking via [Hyperswarm](https://github.com/holepunchto/hyperswarm) runs inside an embedded [Bare](https://github.com/holepunchto/bare) worklet spawned by `pear-mobile` — keeping Node/Bare APIs out of the React Native JS thread. The view communicates with the worker over a framed JSON IPC stream.
+The app runs as a standard Expo / React Native application. [snake-core](../snake-core) starts an embedded [Bare](https://github.com/holepunchto/bare) worklet through `pear-mobile` and exposes a framed JSON IPC stream to the view. Peer-to-peer networking and OTA updates run inside that worklet.
 
 ```
 React Native view (src/)
-  └─ pear-mobile PearRuntime.run('/worker.bundle', …)
+  └─ new SnakeCore({ bundle, updates, version, upgrade, name })
        └─ framed-stream IPC
-            └─ bare worklet (workers/main.js)  ←→  Hyperswarm (P2P)
+            └─ snake-core/worker  ←→  Hyperswarm (P2P)
 ```
 
-The game itself — snake movement, wrapping, collisions, food placement — lives entirely in the view layer (`src/game/engine.ts`), a port of the desktop renderer's logic with the browser bits (canvas, keydown, custom element) removed. The worker is only P2P transport plus OTA updates. The worker is kept **in-app** (`workers/main.js`) rather than sharing the `hello-pear-worker` package.
+The game itself — snake movement, wrapping, collisions, food placement — lives entirely in the view layer (`src/game/engine.ts`), a port of the desktop renderer's logic with the browser bits (canvas, keydown, custom element) removed. The networking and updater worker is shared with the desktop app through `snake-core`.
 
 **IPC protocol** (identical to the desktop build)
 
@@ -49,11 +49,14 @@ See [Expo SDK 55](https://docs.expo.dev/versions/latest) for the full support ma
 
 ## Development
 
+Keep `snake-core` alongside this repository. The local package dependency and Metro configuration use that checkout.
+
 ```sh
+npm install --prefix ../snake-core
 npm install
 ```
 
-Bundle the Bare worker into a worklet (required before the first run and after any change to `workers/main.js`):
+Bundle the shared Bare worker into a worklet (required before the first run and after changes to `snake-core`):
 
 ```sh
 npm run bundle:bare
