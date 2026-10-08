@@ -37,16 +37,16 @@
         "backgroundColor": "#001601"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.anonymous.snake"
+      "package": "com.pearsnake.app"
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "extra": {
+      "iosAppStoreId": "",
       "eas": {
         "projectId": "add0ac0a-2ac7-4fc4-9937-d2b5a01515c4"
-      },
-      "iosAppStoreId": ""
+      }
     },
     "owner": "geordangesink"
   }
