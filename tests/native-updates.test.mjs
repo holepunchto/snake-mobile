@@ -1,5 +1,8 @@
 import assert from 'node:assert/strict'
+import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { createRequire } from 'node:module'
+import { tmpdir } from 'node:os'
+import path from 'node:path'
 import test from 'node:test'
 
 const require = createRequire(import.meta.url)
@@ -19,15 +22,21 @@ class MainApplication : Application(), ReactApplication {
 `
 
 async function apply(contents, withPear = false) {
-  let config = { name: 'Snake', slug: 'snake' }
-  if (withPear) config = withPearUpdates(config)
-  config = withSnakeUpdates(config)
-  const result = await config.mods.android.mainApplication({
-    ...config,
-    modRequest: {},
-    modResults: { contents, language: 'kt', path: 'MainApplication.kt' }
-  })
-  return result.modResults.contents
+  const projectRoot = await mkdtemp(path.join(tmpdir(), 'snake-native-updates-'))
+  try {
+    await writeFile(path.join(projectRoot, 'package.json'), '{}')
+    let config = { name: 'Snake', slug: 'snake' }
+    if (withPear) config = withPearUpdates(config)
+    config = withSnakeUpdates(config)
+    const result = await config.mods.android.mainApplication({
+      ...config,
+      modRequest: { projectRoot },
+      modResults: { contents, language: 'kt', path: 'MainApplication.kt' }
+    })
+    return result.modResults.contents
+  } finally {
+    await rm(projectRoot, { recursive: true, force: true })
+  }
 }
 
 test('registers the dynamic bundle provider before ReactHost construction', async () => {
