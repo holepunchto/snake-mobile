@@ -79,7 +79,6 @@ iOS and Android builds, signing, artifacts, store publishing, and Pear update bu
 
 Applying an update reloads the app after the worker finishes writing it. Android uses the local `snake-updates` native module to select the latest eligible Pear bundle on every reload. This requires a new native build; run `npm run prebuild` before building locally. Older Android builds show instructions to fully stop and reopen the app instead. A failed reload, or one that leaves the app running for 10 seconds, shows the same fallback. The optional native module keeps the JavaScript update compatible with older binaries.
 
-
 ```sh
 npm run update   # bundle:bare + bundle:react-native + build → dist/
 ```
