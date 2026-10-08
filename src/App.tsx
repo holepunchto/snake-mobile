@@ -11,7 +11,7 @@ import {
   View
 } from 'react-native'
 import { StatusBar } from 'expo-status-bar'
-import { reloadAppAsync, requireOptionalNativeModule } from 'expo-modules-core'
+import { reloadAppAsync } from 'expo-modules-core'
 import * as SplashScreen from 'expo-splash-screen'
 import PearRuntime from 'pear-mobile'
 import type { Worklet } from 'react-native-bare-kit'
@@ -30,10 +30,7 @@ import { theme } from './theme'
 import { restartAfterUpdate } from './restart'
 
 const appName = productName ?? name
-const nativeUpdates = requireOptionalNativeModule<{ canReload: boolean }>('SnakeUpdates')
-const canReloadUpdate =
-  typeof globalThis.expo?.reloadAppAsync === 'function' &&
-  (Platform.OS === 'ios' || (Platform.OS === 'android' && nativeUpdates?.canReload === true))
+const canReloadUpdate = typeof globalThis.expo?.reloadAppAsync === 'function'
 
 // Hold the native splash until the AnimatedSplash overlay has painted its
 // first frame — otherwise there is a flash of bare root view in between.

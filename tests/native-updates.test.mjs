@@ -6,7 +6,6 @@ import path from 'node:path'
 import test from 'node:test'
 
 const require = createRequire(import.meta.url)
-const withSnakeUpdates = require('../plugins/with-snake-updates.js')
 const withPearUpdates = require('pear-runtime-react-native')
 
 const fixture = `package com.pearsnake.app
@@ -21,13 +20,11 @@ class MainApplication : Application(), ReactApplication {
 }
 `
 
-async function apply(contents, withPear = false) {
+async function apply(contents) {
   const projectRoot = await mkdtemp(path.join(tmpdir(), 'snake-native-updates-'))
   try {
     await writeFile(path.join(projectRoot, 'package.json'), '{}')
-    let config = { name: 'Snake', slug: 'snake' }
-    if (withPear) config = withPearUpdates(config)
-    config = withSnakeUpdates(config)
+    const config = withPearUpdates({ name: 'Snake', slug: 'snake' })
     const result = await config.mods.android.mainApplication({
       ...config,
       modRequest: { projectRoot },
@@ -39,12 +36,12 @@ async function apply(contents, withPear = false) {
   }
 }
 
-test('registers the dynamic bundle provider before ReactHost construction', async () => {
+test('links the Pear resolver to the ReactHost and native reload hook', async () => {
   const contents = await apply(fixture)
-  assert.match(contents, /bundleFileProvider = \{ pearOtaBundle\(applicationContext\) \}/)
-  assert.ok(
-    contents.indexOf('SnakeUpdatesPackage.bundleFileProvider') <
-      contents.indexOf('ExpoReactHostFactory.getDefaultReactHost')
+  assert.match(contents, /jsBundleFilePath = pearOtaBundle\(applicationContext\)/)
+  assert.match(
+    contents,
+    /to\.holepunch\.pear\.runtime\.PearRuntimePackage\.bundleFileProvider = \{ pearOtaBundle\(context\) \}/
   )
 })
 
@@ -53,13 +50,12 @@ test('repeated prebuilds preserve a single provider registration', async () => {
   assert.equal(await apply(once), once)
 })
 
-test('composes with the Pear plugin and retains its version-gated resolver', async () => {
-  const once = await apply(fixture, true)
-  assert.match(once, /private fun pearOtaBundle\(context: android.content.Context\)/)
-  assert.match(once, /pearOtaSemVerNewer\(version, native\)/)
-  assert.equal(await apply(once, true), once)
+test('retains the version-gated resolver', async () => {
+  const contents = await apply(fixture)
+  assert.match(contents, /private fun pearOtaBundle\(context: android.content.Context\)/)
+  assert.match(contents, /pearOtaSemVerNewer\(version, native\)/)
 })
 
 test('rejects an unsupported native template', async () => {
-  await assert.rejects(apply('class MainApplication {}'), /Expo ReactHost initializer/)
+  await assert.rejects(apply('class MainApplication {}'), /no ExpoReactHostFactory/)
 })
