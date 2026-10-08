@@ -71,15 +71,20 @@ Use `npm start` to (re)start just the Metro bundler without rebuilding. The iOS 
 
 In development (`npm run ios` / `npm run android`) the app passes `__DEV__` to the worker so OTA updates are disabled, mirroring the desktop `--no-updates` default.
 
+## Releases
+
+iOS and Android builds, signing, artifacts, store publishing, and Pear update builds run in [holepunchto/pear-snake-ci-build](https://github.com/holepunchto/pear-snake-ci-build). See [Releasing](https://github.com/holepunchto/pear-snake-ci-build/blob/main/RELEASING.md) for the workflows and central secrets setup.
+
 ## OTA updates & deploy
 
-OTA behaves exactly as in [hello-pear-react-native](../hello-pear-react-native) — the worker replicates the seeded application drive behind the `upgrade` link, emits `updating` / `updated`, and applies the new bundle on request. Full flow:
+Applying an update reloads the app after the worker finishes writing it. Android uses the local `snake-updates` native module to select the latest eligible Pear bundle on every reload. This requires a new native build; run `npm run prebuild` before building locally. Older Android builds show instructions to fully stop and reopen the app instead. A failed reload, or one that leaves the app running for 10 seconds, shows the same fallback. The optional native module keeps the JavaScript update compatible with older binaries.
+
 
 ```sh
 npm run update   # bundle:bare + bundle:react-native + build → dist/
 ```
 
-Then stage, seed, provision and (for production) multisign the `dist/` folder against the `upgrade` link in `package.json`. See the [hello-pear-react-native README](../hello-pear-react-native/README.md) for the complete staging, provisioning and multisig ceremony, and [OTA.md](../hello-pear-react-native/OTA.md) for the from-scratch OTA wiring.
+Then stage, seed, provision and (for production) multisign the `dist/` folder against the `upgrade` link in `package.json`.
 
 Before a production build, set `package.json` `upgrade` to a real `pear://` link (`pear touch`) and bump `version`.
 

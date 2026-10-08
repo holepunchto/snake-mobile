@@ -3,7 +3,7 @@
   "productName": "Snake",
   "version": "1.0.0",
   "description": "P2P multiplayer snake game for mobile, built on Pear for Mobile",
-  "upgrade": "pear://<SET_UPGRADE_LINK>",
+  "upgrade": "",
   "main": "index.ts",
   "imports": {
     "pear-runtime": {
@@ -18,7 +18,6 @@
     "bundle:react-native": "npx react-native bundle --platform ios --dev false --entry-file index.ts --bundle-output out/ios/Snake/app.bundle --assets-dest out/ios/Snake && npx react-native bundle --platform android --dev false --entry-file index.ts --bundle-output out/android/Snake/app.bundle --assets-dest out/android/Snake",
     "build": "npx pear-build --ios-arm64 ./out/ios/Snake --ios-arm64-simulator ./out/ios/Snake --ios-x64-simulator ./out/ios/Snake --android-arm64 ./out/android/Snake --package ./package.json --config ./pear.json --target dist",
     "update": "npm run bundle:bare && npm run bundle:react-native && npm run build",
-    "eas-build-post-install": "npm run bundle:bare",
     "prebuild": "npx expo prebuild",
     "start": "expo start --port 8099",
     "ios": "expo run:ios --port 8099",
@@ -27,7 +26,7 @@
     "production:android": "npx expo run:android --variant release",
     "lint": "lunte",
     "format": "prettier . --write",
-    "test": "prettier . --check && lunte"
+    "test": "prettier . --check && lunte && node --test tests/*.test.mjs"
   },
   "repository": {
     "type": "git",
@@ -52,7 +51,7 @@
     "hypercore-crypto": "^3.4.2",
     "hyperswarm": "^4.17.0",
     "pear-mobile": "^4.3.0",
-    "pear-runtime-react-native": "^3.0.0",
+    "pear-runtime-react-native": "^3.0.1",
     "react": "19.2.0",
     "react-native": "0.83.2",
     "react-native-bare-kit": "^0.12.0",

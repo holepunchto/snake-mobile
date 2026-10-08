@@ -11,9 +11,10 @@ import {
   View
 } from 'react-native'
 import { StatusBar } from 'expo-status-bar'
-import { reloadAppAsync } from 'expo-modules-core'
+import { reloadAppAsync, requireOptionalNativeModule } from 'expo-modules-core'
 import * as SplashScreen from 'expo-splash-screen'
 import PearRuntime from 'pear-mobile'
+import type { Worklet } from 'react-native-bare-kit'
 import FramedStream from 'framed-stream'
 import b4a from 'b4a'
 
@@ -22,12 +23,17 @@ import { version, upgrade, name, productName } from '../package.json'
 import { SnakeGame } from './game/engine'
 import { TILES, Direction } from './game/constants'
 import { SetupScreen } from './screens/SetupScreen'
-import { GameScreen } from './screens/GameScreen'
+import { GameScreen, AnnouncementStatus } from './screens/GameScreen'
 import { UpdateBanner, UpdateStatus } from './components/UpdateBanner'
 import { AnimatedSplash } from './components/AnimatedSplash'
 import { theme } from './theme'
+import { restartAfterUpdate } from './restart'
 
 const appName = productName ?? name
+const nativeUpdates = requireOptionalNativeModule<{ canReload: boolean }>('SnakeUpdates')
+const canReloadUpdate =
+  typeof globalThis.expo?.reloadAppAsync === 'function' &&
+  (Platform.OS === 'ios' || (Platform.OS === 'android' && nativeUpdates?.canReload === true))
 
 // Hold the native splash until the AnimatedSplash overlay has painted its
 // first frame — otherwise there is a flash of bare root view in between.
@@ -42,7 +48,10 @@ type ScreenName = 'setup' | 'loading' | 'game'
 
 export default function App() {
   const [screen, setScreen] = useState<ScreenName>('setup')
-  const [topic, setTopic] = useState('')
+  const [joinCode, setJoinCode] = useState<{ topic: string; status: AnnouncementStatus }>({
+    topic: '',
+    status: 'announcing'
+  })
   const [peers, setPeers] = useState(0)
   const [over, setOver] = useState(false)
   const [updateStatus, setUpdateStatus] = useState<UpdateStatus>('')
@@ -53,6 +62,7 @@ export default function App() {
 
   const pipeRef = useRef<FramedStream | null>(null)
   const shouldReload = useRef(false)
+  const cancelRestart = useRef<(() => void) | null>(null)
 
   // The worker sends JSON messages; App writes JSON commands back.
   function sendToWorker(msg: unknown) {
@@ -77,7 +87,7 @@ export default function App() {
       version,
       upgrade,
       appName
-    ])
+    ]) as Worklet['IPC']
     const pipe = new FramedStream(IPC)
     pipeRef.current = pipe
 
@@ -93,8 +103,10 @@ export default function App() {
     pipe.on('error', (err) => console.error(err))
 
     return () => {
+      cancelRestart.current?.()
       game.destroy()
       pipe.destroy()
+      IPC.worklet.terminate()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -109,26 +121,33 @@ export default function App() {
         break
       case 'updateApplied':
         if (shouldReload.current) {
-          reloadAppAsync('Pear update applied').catch((err) => {
-            setError(err instanceof Error ? err.message : String(err))
-            setUpdateStatus('failed')
-          })
-        } else {
-          setUpdateStatus('')
+          shouldReload.current = false
+          setUpdateStatus('restarting')
+          cancelRestart.current?.()
+          cancelRestart.current = restartAfterUpdate(
+            canReloadUpdate ? () => reloadAppAsync('Pear update applied') : null,
+            () => setUpdateStatus('restart-required')
+          )
         }
         break
       case 'minverRequired':
         setMinver(msg.minver)
         break
       case 'updateFailed':
+        shouldReload.current = false
         setError(msg.error || '')
         setUpdateStatus('failed')
         break
       case 'ready':
-        setTopic(msg.topic)
+        setJoinCode({ topic: msg.topic, status: 'announcing' })
         game.start(msg.id, b4a.from(msg.topic, 'hex'))
         setOver(false)
         setScreen('game')
+        break
+      case 'flushed':
+        setJoinCode((current) =>
+          msg.topic === current.topic ? { ...current, status: 'online' } : current
+        )
         break
       case 'connected':
         game.addPeer(msg.id)
@@ -156,11 +175,13 @@ export default function App() {
   }
 
   function createGame() {
+    setJoinCode({ topic: '', status: 'announcing' })
     setScreen('loading')
     sendToWorker({ type: 'join', topic: null })
   }
 
   function joinGame(topicHex: string) {
+    setJoinCode({ topic: '', status: 'announcing' })
     setScreen('loading')
     sendToWorker({ type: 'join', topic: topicHex })
   }
@@ -172,12 +193,14 @@ export default function App() {
     game.leave()
     setOver(false)
     setPeers(0)
-    setTopic('')
+    setJoinCode({ topic: '', status: 'announcing' })
     setScreen('setup')
   }
 
   function applyUpdate() {
+    if (shouldReload.current) return
     shouldReload.current = true
+    setError('')
     setUpdateStatus('applying')
     sendToWorker({ type: 'applyUpdate' })
   }
@@ -204,7 +227,8 @@ export default function App() {
         <GameScreen
           game={game}
           size={BOARD_SIZE}
-          topic={topic}
+          topic={joinCode.topic}
+          announcement={joinCode.status}
           peers={peers}
           over={over}
           version={renderCount}
