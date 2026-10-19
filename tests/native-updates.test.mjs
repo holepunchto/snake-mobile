@@ -8,7 +8,7 @@ import test from 'node:test'
 const require = createRequire(import.meta.url)
 const withPearUpdates = require('pear-runtime-react-native')
 
-const fixture = `package com.pearsnake.app
+const fixture = `package to.holepunch.snake
 
 class MainApplication : Application(), ReactApplication {
   override val reactHost: ReactHost by lazy {
