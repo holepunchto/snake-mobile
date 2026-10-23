@@ -1,8 +1,9 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native'
+import { Platform, Pressable, StyleSheet, Text, View } from 'react-native'
 import { theme } from '../theme'
 import { canOpenStore, openStore, storeName } from '../store-link'
 
-export type UpdateStatus = '' | 'updating' | 'updated' | 'applying' | 'failed'
+export type UpdateStatus =
+  '' | 'updating' | 'updated' | 'applying' | 'restarting' | 'restart-required' | 'failed'
 
 type Props = {
   status: UpdateStatus
@@ -39,9 +40,17 @@ export function UpdateBanner({ status, minver, error, onApply }: Props) {
   if (status === '') return null
 
   return (
-    <View style={styles.banner}>
+    <View style={styles.banner} accessibilityLiveRegion='polite'>
       {status === 'updating' && <Text style={styles.text}>Updating...</Text>}
       {status === 'failed' && <Text style={styles.text}>{error || 'Update failed'}</Text>}
+      {status === 'restarting' && <Text style={styles.text}>Restarting...</Text>}
+      {status === 'restart-required' && (
+        <Text style={styles.text}>
+          {Platform.OS === 'android'
+            ? 'Update installed. Fully restart Snake: open Android Settings → Apps → Snake → Force stop, then reopen Snake.'
+            : 'Update installed. Fully close Snake from the app switcher, then reopen it.'}
+        </Text>
+      )}
       {(status === 'updated' || status === 'applying') && (
         <View style={styles.row}>
           <Text style={styles.text}>Update ready!</Text>

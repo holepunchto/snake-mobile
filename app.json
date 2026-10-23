@@ -28,8 +28,7 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.anonymous.snake",
-      "appleTeamId": "99564YDV39"
+      "bundleIdentifier": "to.holepunch.snake"
     },
     "android": {
       "adaptiveIcon": {
@@ -37,17 +36,13 @@
         "backgroundColor": "#001601"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.anonymous.snake"
+      "package": "to.holepunch.snake"
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "extra": {
-      "eas": {
-        "projectId": "add0ac0a-2ac7-4fc4-9937-d2b5a01515c4"
-      },
       "iosAppStoreId": ""
-    },
-    "owner": "geordangesink"
+    }
   }
 }

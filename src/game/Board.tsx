@@ -64,8 +64,8 @@ const styles = StyleSheet.create({
     position: 'relative',
     overflow: 'hidden',
     alignSelf: 'center',
-    borderWidth: 1,
-    borderColor: theme.accent
+    outlineWidth: 1,
+    outlineColor: theme.accent
   },
   food: {
     position: 'absolute'
