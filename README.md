@@ -6,25 +6,27 @@ Same game, same wire protocol, same board as the desktop build — a mobile peer
 
 ## Architecture
 
-The app runs as a standard Expo / React Native application. Peer-to-peer networking via [Hyperswarm](https://github.com/holepunchto/hyperswarm) runs inside an embedded [Bare](https://github.com/holepunchto/bare) worklet spawned by `pear-mobile` — keeping Node/Bare APIs out of the React Native JS thread. The view communicates with the worker over a framed JSON IPC stream.
+The app runs as a standard Expo / React Native application. [snake-core](https://github.com/holepunchto/snake-core) starts an embedded [Bare](https://github.com/holepunchto/bare) worklet through `pear-mobile` and exposes a framed JSON IPC stream to the view. Peer-to-peer networking and OTA updates run inside that worklet.
 
 ```
 React Native view (src/)
-  └─ pear-mobile PearRuntime.run('/worker.bundle', …)
+  └─ new SnakeCore({ bundle, updates, version, upgrade, name })
        └─ framed-stream IPC
-            └─ bare worklet (workers/main.js)  ←→  Hyperswarm (P2P)
+            └─ snake-core/worker  ←→  Hyperswarm (P2P)
 ```
 
-The game itself — snake movement, wrapping, collisions, food placement — lives entirely in the view layer (`src/game/engine.ts`), a port of the desktop renderer's logic with the browser bits (canvas, keydown, custom element) removed. The worker is only P2P transport plus OTA updates. The worker is kept **in-app** (`workers/main.js`) rather than sharing the `hello-pear-worker` package.
+The game itself — snake movement, wrapping, collisions, food placement — lives entirely in the view layer (`src/game/engine.ts`), a port of the desktop renderer's logic with the browser bits (canvas, keydown, custom element) removed. The networking and updater worker is shared with the desktop app through `snake-core`.
 
 **IPC protocol** (identical to the desktop build)
 
 | Direction     | Message                           | Meaning                                     |
 | ------------- | --------------------------------- | ------------------------------------------- |
 | view → worker | `{ type: 'join', topic }`         | Join or create a game (null topic = create) |
+| view → worker | `{ type: 'leave' }`               | Leave the current game                      |
 | view → worker | `{ type: 'send', data }`          | Broadcast game state to peers               |
 | view → worker | `{ type: 'applyUpdate' }`         | Apply a downloaded OTA update               |
-| worker → view | `{ type: 'ready', id, topic }`    | Swarm flushed, game can start               |
+| worker → view | `{ type: 'ready', id, topic }`    | Game initialized                            |
+| worker → view | `{ type: 'flushed', topic }`      | Topic discovery completed                   |
 | worker → view | `{ type: 'connected', id }`       | Peer joined                                 |
 | worker → view | `{ type: 'disconnected', id }`    | Peer dropped                                |
 | worker → view | `{ type: 'data', id, payload }`   | Game state from a peer                      |
