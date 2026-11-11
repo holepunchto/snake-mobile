@@ -3,7 +3,7 @@
   "productName": "Snake",
   "version": "1.0.0",
   "description": "P2P multiplayer snake game for mobile, built on Pear for Mobile",
-  "upgrade": "pear://<SET_UPGRADE_LINK>",
+  "upgrade": "pear://wx7g7ju1i3kdtkoz67bnn6ihmz978kdr5ttas4fwfnwpbphaw4by",
   "main": "index.ts",
   "imports": {
     "pear-runtime": {
@@ -18,7 +18,6 @@
     "bundle:react-native": "npx react-native bundle --platform ios --dev false --entry-file index.ts --bundle-output out/ios/Snake/app.bundle --assets-dest out/ios/Snake && npx react-native bundle --platform android --dev false --entry-file index.ts --bundle-output out/android/Snake/app.bundle --assets-dest out/android/Snake",
     "build": "npx pear-build --ios-arm64 ./out/ios/Snake --ios-arm64-simulator ./out/ios/Snake --ios-x64-simulator ./out/ios/Snake --android-arm64 ./out/android/Snake --package ./package.json --config ./pear.json --target dist",
     "update": "npm run bundle:bare && npm run bundle:react-native && npm run build",
-    "eas-build-post-install": "npm run bundle:bare",
     "prebuild": "npx expo prebuild",
     "start": "expo start --port 8099",
     "ios": "expo run:ios --port 8099",
@@ -27,7 +26,9 @@
     "production:android": "npx expo run:android --variant release",
     "lint": "lunte",
     "format": "prettier . --write",
-    "test": "prettier . --check && lunte"
+    "test": "prettier . --check && lunte && npm run test:node && npm run test:bare",
+    "test:node": "brittle-node tests/game.test.js tests/restart.test.js",
+    "test:bare": "brittle-bare tests/announcement.test.js"
   },
   "repository": {
     "type": "git",
@@ -52,7 +53,7 @@
     "hypercore-crypto": "^3.4.2",
     "hyperswarm": "^4.17.0",
     "pear-mobile": "^4.3.0",
-    "pear-runtime-react-native": "^3.0.0",
+    "pear-runtime-react-native": "^3.0.1",
     "react": "19.2.0",
     "react-native": "0.83.2",
     "react-native-bare-kit": "^0.12.0",
@@ -62,7 +63,11 @@
     "@react-native-community/cli": "^20.1.3",
     "@react-native/metro-config": "^0.84.0",
     "@types/react": "~19.2.10",
+    "bare": "^1.36.0",
+    "bare-events": "^2.9.2",
+    "bare-module": "^7.5.0",
     "bare-pack": "^2.0.0",
+    "brittle": "^4.5.0",
     "lunte": "^1.6.0",
     "pear-build": "^1.2.0",
     "prettier": "^3.8.1",
