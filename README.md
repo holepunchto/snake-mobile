@@ -67,13 +67,15 @@ npm run ios
 npm run android
 ```
 
-Use `npm start` to (re)start just the Metro bundler without rebuilding. The iOS app is pinned to Metro **port 8099** (via the `./plugins/with-metro-port` config plugin) so it never collides with another React Native project on the default 8081 — `npm run ios` and `npm start` both serve on 8099 to match, so start Metro with those rather than a bare `expo start`. A dev build loads its JS from Metro; a release build (`npm run production:ios`) embeds the bundle and ignores Metro.
+Use `npm start` to (re)start just the Metro bundler without rebuilding. `npm run ios` and `npm start` use Metro **port 8099**. A dev build loads its JS from Metro; a release build (`npm run production:ios`) embeds the bundle and ignores Metro.
 
 In development (`npm run ios` / `npm run android`) the app passes `__DEV__` to the worker so OTA updates are disabled, mirroring the desktop `--no-updates` default.
 
 ## Releases
 
-Build and signing scripts live in this repository. [holepunchto/pear-snake-ci-build](https://github.com/holepunchto/pear-snake-ci-build) calls them with credentials from its protected `release` environment and handles artifacts, store publishing, and Pear update builds. Secret values belong only in that CI environment, never in this repository. See [Releasing](https://github.com/holepunchto/pear-snake-ci-build/blob/main/RELEASING.md) for setup.
+[holepunchto/pear-snake-ci-build](https://github.com/holepunchto/pear-snake-ci-build) runs this app's build scripts without signing credentials, then signs and publishes the artifacts in separate jobs using its protected `release` environment. This repository keeps app build configuration and development commands; signing and publishing scripts live in CI. See [Releasing](https://github.com/holepunchto/pear-snake-ci-build/blob/main/RELEASING.md) for setup.
+
+After native prebuild (and `pod install` for iOS), `npm run build:ios` and `npm run build:android` compile unsigned release artifacts into `dist/ios` and `dist/android`. The Android command requires Gradle 9.
 
 ## OTA updates & deploy
 
