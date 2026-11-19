@@ -20,7 +20,6 @@ module.exports = ({ config }) => {
     ios: {
       ...baseExpoConfig.ios,
       ...incoming.ios,
-      ...(process.env.APPLE_TEAM_ID?.trim() && { appleTeamId: process.env.APPLE_TEAM_ID.trim() }),
       ...(buildNumber && { buildNumber })
     },
     android: {
