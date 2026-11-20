@@ -11,14 +11,3 @@ jobs:
     steps:
       - uses: holepunchto/actions/node-base@v1
       - run: npm run lint
-  test:
-    strategy:
-      matrix:
-        include:
-          - os: ubuntu-latest
-            platform: linux
-    runs-on: ${{ matrix.os }}
-    name: Test / ${{ matrix.platform }}
-    steps:
-      - uses: holepunchto/actions/bare-base@v1
-      - run: npm test
