@@ -13,9 +13,7 @@ import {
 import { StatusBar } from 'expo-status-bar'
 import { reloadAppAsync } from 'expo-modules-core'
 import * as SplashScreen from 'expo-splash-screen'
-import PearRuntime from 'pear-mobile'
-import type { Worklet } from 'react-native-bare-kit'
-import FramedStream from 'framed-stream'
+import SnakeCore from 'snake-core'
 import b4a from 'b4a'
 
 import bundle from './worker.bundle.js'
@@ -57,7 +55,7 @@ export default function App() {
   const [splashDone, setSplashDone] = useState(false)
   const [renderCount, forceRender] = useReducer((n: number) => n + 1, 0)
 
-  const pipeRef = useRef<FramedStream | null>(null)
+  const pipeRef = useRef<SnakeCore | null>(null)
   const shouldReload = useRef(false)
   const cancelRestart = useRef<(() => void) | null>(null)
 
@@ -79,13 +77,13 @@ export default function App() {
   const game = gameRef.current
 
   useEffect(() => {
-    const IPC = PearRuntime.run('/worker.bundle', bundle, [
-      (!__DEV__).toString(),
+    const pipe = new SnakeCore({
+      bundle,
+      updates: !__DEV__,
       version,
       upgrade,
-      appName
-    ]) as Worklet['IPC']
-    const pipe = new FramedStream(IPC)
+      name: appName
+    })
     pipeRef.current = pipe
 
     pipe.on('data', (data) => {
@@ -101,9 +99,9 @@ export default function App() {
 
     return () => {
       cancelRestart.current?.()
+      pipeRef.current = null
       game.destroy()
       pipe.destroy()
-      IPC.worklet.terminate()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
