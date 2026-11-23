@@ -7,10 +7,13 @@ import { SnakeGame } from '../game/engine'
 import { DPad } from '../components/DPad'
 import { theme } from '../theme'
 
+export type AnnouncementStatus = 'announcing' | 'online'
+
 type Props = {
   game: SnakeGame
   size: number
   topic: string
+  announcement: AnnouncementStatus
   peers: number
   over: boolean
   version: number
@@ -25,6 +28,7 @@ export function GameScreen({
   game,
   size,
   topic,
+  announcement,
   peers,
   over,
   version,
@@ -51,7 +55,7 @@ export function GameScreen({
   ).current
 
   const [copied, setCopied] = useState(false)
-  const [showTopic, setShowTopic] = useState(false)
+  const [showTopic, setShowTopic] = useState(true)
   const copyTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   useEffect(() => () => clearTimeout(copyTimer.current), [])
 
@@ -84,6 +88,7 @@ export function GameScreen({
         <Pressable onPress={onLeave} hitSlop={8}>
           <Text style={styles.leave}>‹ Leave</Text>
         </Pressable>
+        <Text style={styles.inviteHint}>{announcement}</Text>
         <Text style={styles.peers}>Peers: {peers}</Text>
       </View>
 

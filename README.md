@@ -67,19 +67,27 @@ npm run ios
 npm run android
 ```
 
-Use `npm start` to (re)start just the Metro bundler without rebuilding. The iOS app is pinned to Metro **port 8099** (via the `./plugins/with-metro-port` config plugin) so it never collides with another React Native project on the default 8081 — `npm run ios` and `npm start` both serve on 8099 to match, so start Metro with those rather than a bare `expo start`. A dev build loads its JS from Metro; a release build (`npm run production:ios`) embeds the bundle and ignores Metro.
+Use `npm start` to (re)start just the Metro bundler without rebuilding. `npm run ios` and `npm start` use Metro **port 8099**. A dev build loads its JS from Metro; a release build (`npm run production:ios`) embeds the bundle and ignores Metro.
 
 In development (`npm run ios` / `npm run android`) the app passes `__DEV__` to the worker so OTA updates are disabled, mirroring the desktop `--no-updates` default.
 
+## Releases
+
+[holepunchto/pear-snake-ci-build](https://github.com/holepunchto/pear-snake-ci-build) runs this app's build scripts without signing credentials, then signs and publishes the artifacts in separate jobs using its protected `release` environment. This repository keeps app build configuration and development commands; signing and publishing scripts live in CI. See [Releasing](https://github.com/holepunchto/pear-snake-ci-build/blob/main/RELEASING.md) for setup.
+
+After native prebuild (and `pod install` for iOS), `npm run build:ios` and `npm run build:android` compile unsigned release artifacts into `dist/ios` and `dist/android`. The Android command requires Gradle 9.
+
 ## OTA updates & deploy
 
-OTA behaves exactly as in [hello-pear-react-native](../hello-pear-react-native) — the worker replicates the seeded application drive behind the `upgrade` link, emits `updating` / `updated`, and applies the new bundle on request. Full flow:
+Applying an update reloads the app after the worker applies it. `pear-runtime-react-native` selects the latest eligible Pear bundle on iOS and Android. Its Expo plugin generates the Android reload hook in `modules/pear-runtime-reload`; this directory is ignored by Git and recreated during prebuild. Installing the dependency alone does not add the hook to an existing Android binary: run `npm run prebuild`, then build and install the native app. An unavailable or failed reload, or one that leaves the app running for 10 seconds, shows instructions to fully stop and reopen the app.
+
+OTA updates require a newer `package.json` version than both the native app and the currently running JavaScript bundle. Increasing only the build number is insufficient.
 
 ```sh
 npm run update   # bundle:bare + bundle:react-native + build → dist/
 ```
 
-Then stage, seed, provision and (for production) multisign the `dist/` folder against the `upgrade` link in `package.json`. See the [hello-pear-react-native README](../hello-pear-react-native/README.md) for the complete staging, provisioning and multisig ceremony, and [OTA.md](../hello-pear-react-native/OTA.md) for the from-scratch OTA wiring.
+Then stage, seed, provision and (for production) multisign the `dist/` folder against the `upgrade` link in `package.json`.
 
 Before a production build, set `package.json` `upgrade` to a real `pear://` link (`pear touch`) and bump `version`.
 

@@ -52,6 +52,7 @@ const gameSwarm = new Hyperswarm()
 // is live and doubles as the gate below: leaving stops us announcing the topic,
 // but a peer that is still in that game may hold our key and dial back in.
 let joined = null
+let announceTimer = null
 
 // Join and leave are serialised so that a quick Leave -> Join cannot leave two
 // discovery sessions for the same topic racing each other.
@@ -100,8 +101,25 @@ async function joinGame(topicHex) {
   const id = b4a.toString(gameSwarm.keyPair.publicKey, 'hex').slice(0, 6)
   joined = topicBuffer
   const discovery = gameSwarm.join(topicBuffer, { client: true, server: true })
-  await discovery.flushed()
   send({ type: 'ready', id, topic })
+  announceGame(discovery, topicBuffer).catch(console.error)
+}
+
+async function announceGame(discovery, topicBuffer, refresh = false) {
+  if (joined !== topicBuffer) return
+  let flushed = false
+  try {
+    flushed = refresh ? (await discovery.refresh()) !== false : await discovery.flushed()
+  } catch {}
+  if (joined !== topicBuffer) return
+  if (flushed) {
+    send({ type: 'flushed', topic: b4a.toString(topicBuffer, 'hex') })
+    return
+  }
+  announceTimer = setTimeout(() => {
+    announceTimer = null
+    announceGame(discovery, topicBuffer, true).catch(console.error)
+  }, 5000)
 }
 
 // Stop announcing the topic and drop the peers it found. hyperswarm keeps
@@ -109,6 +127,8 @@ async function joinGame(topicHex) {
 // a game the player has left keep streaming their state, and rejoining that
 // same topic never re-emits 'connection' for them — they stay invisible.
 async function leaveGame() {
+  clearTimeout(announceTimer)
+  announceTimer = null
   if (joined === null) return
   const topic = joined
   joined = null
@@ -146,6 +166,8 @@ pipe.on('data', async (data) => {
 })
 
 goodbye(async () => {
+  clearTimeout(announceTimer)
+  joined = null
   await gameSwarm.destroy()
   await updaterSwarm.destroy()
   await pear.close()
